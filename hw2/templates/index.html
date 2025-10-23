@@ -5,6 +5,7 @@
 </head>
 <body>
     <h1>Song List</h1>
+    <a href="{{ url_for('home') }}">Back to Home</a>  <!-- Added link to home -->
     <a href="{{ url_for('sign') }}">Add a Song</a>
     <ul>
         {% for entry in entries %}

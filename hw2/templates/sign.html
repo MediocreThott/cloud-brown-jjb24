@@ -5,7 +5,9 @@
 </head>
 <body>
     <h1>Add a Song</h1>
+    <a href="{{ url_for('home') }}">Back to Home</a>  <!-- Added link to home -->
     <form method="POST">
+        <!-- Form fields remain the same -->
         <label for="title">Title:</label><br>
         <input type="text" id="title" name="title"><br><br>
 
@@ -35,6 +37,5 @@
 
         <input type="submit" value="Submit">
     </form>
-    <a href="{{ url_for('index') }}">Back to Song List</a>
 </body>
 </html>

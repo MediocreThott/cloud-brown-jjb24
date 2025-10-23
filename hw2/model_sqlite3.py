@@ -19,6 +19,7 @@ class SQLite3Model:
         """
         self.db_name = db_name
         self.conn = None
+        self.cursor = None  # Initialize cursor
 
     def get_model(self):
         """
@@ -34,9 +35,10 @@ class SQLite3Model:
         """
         Connects to the SQLite3 database.
         """
-        self.conn = sqlite3.connect(self.db_name)
-        self.cursor = self.conn.cursor()
-        self.create_table()
+        if self.conn is None:  # Only connect if not already connected
+            self.conn = sqlite3.connect(self.db_name)
+            self.cursor = self.conn.cursor()
+            self.create_table()  # Create table after connecting
 
     def disconnect(self):
         """
@@ -44,27 +46,35 @@ class SQLite3Model:
         """
         if self.conn:
             self.conn.close()
+            self.conn = None
+            self.cursor = None
 
     def create_table(self):
         """
         Creates the 'songs' table if it doesn't exist.
         """
-        self.connect()
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS songs (
-                title TEXT,
-                genre TEXT,
-                artist TEXT,
-                writer TEXT,
-                release_year INTEGER,
-                release_month INTEGER,
-                lyrics TEXT,
-                rating INTEGER,
-                url TEXT
-            )
-        """)
-        self.conn.commit()
-        self.disconnect()
+        if self.conn is None:
+            self.connect()  # Ensure connection before creating table
+
+        try:
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS songs (
+                    title TEXT,
+                    genre TEXT,
+                    artist TEXT,
+                    writer TEXT,
+                    release_year INTEGER,
+                    release_month INTEGER,
+                    lyrics TEXT,
+                    rating INTEGER,
+                    url TEXT
+                )
+            """)
+            self.conn.commit()
+        except sqlite3.Error as e:
+            print(f"SQLite error: {e}")
+        finally:
+            pass #self.disconnect() # Don't disconnect after creating table
 
     def insert(self, title, genre, artist, writer, release_year, release_month, lyrics, rating, url):
         """
@@ -82,12 +92,16 @@ class SQLite3Model:
             url (str): The URL of the song.
         """
         self.connect()
-        self.cursor.execute("""
-            INSERT INTO songs (title, genre, artist, writer, release_year, release_month, lyrics, rating, url)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (title, genre, artist, writer, release_year, release_month, lyrics, rating, url))
-        self.conn.commit()
-        self.disconnect()
+        try:
+            self.cursor.execute("""
+                INSERT INTO songs (title, genre, artist, writer, release_year, release_month, lyrics, rating, url)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (title, genre, artist, writer, release_year, release_month, lyrics, rating, url))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            print(f"SQLite error: {e}")
+        finally:
+            pass #self.disconnect()
 
     def select(self):
         """
@@ -97,7 +111,12 @@ class SQLite3Model:
             list: A list of tuples, where each tuple represents a song entry.
         """
         self.connect()
-        self.cursor.execute("SELECT * FROM songs")
-        rows = self.cursor.fetchall()
-        self.disconnect()
-        return rows
+        try:
+            self.cursor.execute("SELECT * FROM songs")
+            rows = self.cursor.fetchall()
+            return rows
+        except sqlite3.Error as e:
+            print(f"SQLite error: {e}")
+            return []
+        finally:
+            pass #self.disconnect()
