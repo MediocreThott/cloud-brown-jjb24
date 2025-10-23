@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Song List</title>
+</head>
+<body>
+    <h1>Song List</h1>
+    <a href="{{ url_for('sign') }}">Add a Song</a>
+    <ul>
+        {% for entry in entries %}
+            <li>
+                <strong>{{ entry.title }}</strong> - {{ entry.artist }} ({{ entry.genre }})
+                <br>
+                Rating: {{ entry.rating }}
+                <br>
+                <a href="{{ entry.url }}">Listen on Music Service</a>
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
