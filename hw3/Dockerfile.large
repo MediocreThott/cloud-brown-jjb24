@@ -1,0 +1,33 @@
+# Use the official Ubuntu 22.04 image as the base.
+FROM ubuntu:22.04
+
+# Set the working directory inside the container to /app.
+WORKDIR /app
+
+# Copy the contents of the hw2 folder into the container's /app directory.
+COPY ./hw2/ .
+
+# ---
+# A Quick Note on the COPY command:
+# This command works because when we run `docker build ... .` later,
+# the final "." tells Docker to use your project's root folder (`cloud`) as the "build context".
+# Therefore, Docker can see the `hw2` folder from there and copy it correctly.
+# ---
+
+# Prevent prompts during package installation.
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update the package list and install Python 3, pip, and other necessary tools.
+RUN apt-get update && \
+    apt-get install -y python3-pip python3-dev build-essential
+
+# Install the Python dependencies specified in your requirements.txt file.
+# This file was copied in from the hw2 directory.
+RUN pip3 install -r requirements.txt
+
+# Inform Docker that the container listens on port 5000 at runtime.
+EXPOSE 5000
+
+# Define the default command to execute when the container starts.
+# This runs your Flask application, which was also copied from hw2.
+CMD ["python3", "-u", "app.py"]

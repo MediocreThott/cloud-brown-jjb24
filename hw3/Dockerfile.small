@@ -1,0 +1,23 @@
+# Use a lightweight, pre-built Python image based on Alpine Linux.
+FROM python:3.9-alpine
+
+# Set the working directory inside the container.
+WORKDIR /app
+
+# Copy the hw2 directory into the container. This works for the same
+# reason as in the large Dockerfile.
+COPY ./hw2/ .
+
+# Use Alpine's package manager 'apk' to install build dependencies
+# that might be needed to compile some Python packages.
+# --no-cache reduces image size.
+RUN apk add --no-cache gcc musl-dev
+
+# Install the Python dependencies.
+RUN pip install -r requirements.txt
+
+# Expose the application port.
+EXPOSE 5000
+
+# Define the command to run your application.
+CMD ["python", "-u", "app.py"]
