@@ -1,11 +1,10 @@
-# Use a lightweight, pre-built Python image based on Alpine Linux.
+# Use pre-built Python image based on Alpine Linux.
 FROM python:3.9-alpine
 
 # Set the working directory inside the container.
 WORKDIR /app
 
-# Copy the hw2 directory into the container. This works for the same
-# reason as in the large Dockerfile.
+# Copy the hw2 directory into the container. 
 COPY ./hw2/ .
 
 # Use Alpine's package manager 'apk' to install build dependencies
