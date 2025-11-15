@@ -1,11 +1,41 @@
-{% extends "layout.html" %}
-{% block content %}
-    <h2>Sign Guestbook</h2>
-    <form action="{{ url_for('sign') }}" method=post>
-	<p class="heading">Name: <input type=text name=name></p>
-	<p class="heading">Email: <input type=text name=email></p>
-        <p class="heading">Message:
-	<textarea rows=5 cols=50 name=message></textarea></p>
-	<p><input type=submit value=Sign></p>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add a Song</title>
+</head>
+<body>
+    <h1>Add a Song</h1>
+    <a href="{{ url_for('home') }}">Back to Home</a>  <!-- Added link to home -->
+    <form method="POST">
+        <!-- Form fields remain the same -->
+        <label for="title">Title:</label><br>
+        <input type="text" id="title" name="title"><br><br>
+
+        <label for="genre">Genre:</label><br>
+        <input type="text" id="genre" name="genre"><br><br>
+
+        <label for="artist">Artist:</label><br>
+        <input type="text" id="artist" name="artist"><br><br>
+
+        <label for="writer">Writer:</label><br>
+        <input type="text" id="writer" name="writer"><br><br>
+
+        <label for="release_year">Release Year:</label><br>
+        <input type="number" id="release_year" name="release_year"><br><br>
+
+        <label for="release_month">Release Month:</label><br>
+        <input type="number" id="release_month" name="release_month"><br><br>
+
+        <label for="lyrics">Lyrics:</label><br>
+        <textarea id="lyrics" name="lyrics"></textarea><br><br>
+
+        <label for="rating">Rating (1-5):</label><br>
+        <input type="number" id="rating" name="rating" min="1" max="5"><br><br>
+
+        <label for="url">URL:</label><br>
+        <input type="url" id="url" name="url"><br><br>
+
+        <input type="submit" value="Submit">
     </form>
-{% endblock %}
+</body>
+</html>

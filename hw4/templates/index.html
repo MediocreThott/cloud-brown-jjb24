@@ -1,15 +1,22 @@
-{% extends "layout.html" %}
-{% block content %}
-    <h2>Guestbook</h2>
-
-    <h3>Sign <a href="{{ url_for('sign') }}">here</a></h3>
-    <h3>Entries</h3>
-    {% for entry in entries %}
-        <p class=entry>
-            {{ entry.name }} &lt;{{ entry.email }}&gt;
-	    <br>signed on {{ entry.signed_on }}<br>
-	    {{ entry.message }}
-        </p>
-    {% endfor %}
-
-{% endblock %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Song List</title>
+</head>
+<body>
+    <h1>Song List</h1>
+    <a href="{{ url_for('home') }}">Back to Home</a>  <!-- Added link to home -->
+    <a href="{{ url_for('sign') }}">Add a Song</a>
+    <ul>
+        {% for entry in entries %}
+            <li>
+                <strong>{{ entry.title }}</strong> - {{ entry.artist }} ({{ entry.genre }})
+                <br>
+                Rating: {{ entry.rating }}
+                <br>
+                <a href="{{ entry.url }}">Listen on Music Service</a>
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
