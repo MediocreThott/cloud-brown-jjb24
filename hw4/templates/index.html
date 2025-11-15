@@ -1,22 +1,29 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Song List</title>
-</head>
-<body>
-    <h1>Song List</h1>
-    <a href="{{ url_for('home') }}">Back to Home</a>  <!-- Added link to home -->
-    <a href="{{ url_for('sign') }}">Add a Song</a>
-    <ul>
-        {% for entry in entries %}
-            <li>
-                <strong>{{ entry.title }}</strong> - {{ entry.artist }} ({{ entry.genre }})
-                <br>
-                Rating: {{ entry.rating }}
-                <br>
-                <a href="{{ entry.url }}">Listen on Music Service</a>
-            </li>
-        {% endfor %}
-    </ul>
-</body>
-</html>
+{% extends "layout.html" %}
+
+{% block title %}Song List{% endblock %}
+
+{% block content %}
+    <h2>All Songs</h2>
+    <div class="nav-links">
+        <a href="{{ url_for('home') }}" class="button">Back to Home</a>
+        <a href="{{ url_for('sign') }}" class="button">Add a Song</a>
+    </div>
+
+    {% if entries %}
+        <ul class="song-list">
+            {% for entry in entries %}
+                <li class="song-card">
+                    <strong>{{ entry.title }}</strong>
+                    <div class="artist">{{ entry.artist }} ({{ entry.genre }})</div>
+                    <div class="rating">Rating: {{ entry.rating }} / 5</div>
+                    <p>Released: {{ entry.release_month }}/{{ entry.release_year }}</p>
+                    {% if entry.url %}
+                        <a href="{{ entry.url }}" target="_blank" class="button">Listen on Music Service</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Your song database is empty! <a href="{{ url_for('sign') }}">Add the first song.</a></p>
+    {% endif %}
+{% endblock %}

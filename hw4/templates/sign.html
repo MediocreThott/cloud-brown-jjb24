@@ -1,41 +1,50 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Add a Song</title>
-</head>
-<body>
-    <h1>Add a Song</h1>
-    <a href="{{ url_for('home') }}">Back to Home</a>  <!-- Added link to home -->
-    <form method="POST">
-        <!-- Form fields remain the same -->
-        <label for="title">Title:</label><br>
-        <input type="text" id="title" name="title"><br><br>
+{% extends "layout.html" %}
 
-        <label for="genre">Genre:</label><br>
-        <input type="text" id="genre" name="genre"><br><br>
+{% block title %}Add a New Song{% endblock %}
 
-        <label for="artist">Artist:</label><br>
-        <input type="text" id="artist" name="artist"><br><br>
+{% block content %}
+    <h2>Add a New Song</h2>
+    <div class="nav-links">
+        <a href="{{ url_for('home') }}" class="button">Back to Home</a>
+    </div>
 
-        <label for="writer">Writer:</label><br>
-        <input type="text" id="writer" name="writer"><br><br>
-
-        <label for="release_year">Release Year:</label><br>
-        <input type="number" id="release_year" name="release_year"><br><br>
-
-        <label for="release_month">Release Month:</label><br>
-        <input type="number" id="release_month" name="release_month"><br><br>
-
-        <label for="lyrics">Lyrics:</label><br>
-        <textarea id="lyrics" name="lyrics"></textarea><br><br>
-
-        <label for="rating">Rating (1-5):</label><br>
-        <input type="number" id="rating" name="rating" min="1" max="5"><br><br>
-
-        <label for="url">URL:</label><br>
-        <input type="url" id="url" name="url"><br><br>
-
-        <input type="submit" value="Submit">
+    <form action="{{ url_for('sign') }}" method="POST">
+        <div class="form-group">
+            <label for="title">Title:</label>
+            <input type="text" id="title" name="title" required>
+        </div>
+        <div class="form-group">
+            <label for="artist">Artist:</label>
+            <input type="text" id="artist" name="artist" required>
+        </div>
+        <div class="form-group">
+            <label for="genre">Genre:</label>
+            <input type="text" id="genre" name="genre">
+        </div>
+        <div class="form-group">
+            <label for="writer">Writer:</label>
+            <input type="text" id="writer" name="writer">
+        </div>
+        <div class="form-group">
+            <label for="release_year">Release Year:</label>
+            <input type="number" id="release_year" name="release_year" required>
+        </div>
+        <div class="form-group">
+            <label for="release_month">Release Month:</label>
+            <input type="number" id="release_month" name="release_month" required>
+        </div>
+        <div class="form-group">
+            <label for="lyrics">Lyrics:</label>
+            <textarea id="lyrics" name="lyrics"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="rating">Rating (1-5):</label>
+            <input type="number" id="rating" name="rating" min="1" max="5" required>
+        </div>
+        <div class="form-group">
+            <label for="url">URL:</label>
+            <input type="url" id="url" name="url" placeholder="https://...">
+        </div>
+        <input type="submit" value="Submit Song">
     </form>
-</body>
-</html>
+{% endblock %}

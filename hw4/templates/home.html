@@ -1,14 +1,12 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Song Database</title>
-</head>
-<body>
+{% extends "layout.html" %}
+
+{% block title %}Welcome - Song Database{% endblock %}
+
+{% block content %}
     <h1>Welcome to the Song Database!</h1>
-    <p>Please choose an option:</p>
-    <ul>
-        <li><a href="{{ url_for('index') }}">View All Songs</a></li>
-        <li><a href="{{ url_for('sign') }}">Add a New Song</a></li>
-    </ul>
-</body>
-</html>
+    <p>This is your personal collection of musical masterpieces. You can browse your existing collection or add a new song to the database.</p>
+    <div class="nav-links">
+        <a href="{{ url_for('index') }}" class="button">View All Songs</a>
+        <a href="{{ url_for('sign') }}" class="button">Add a New Song</a>
+    </div>
+{% endblock %}
