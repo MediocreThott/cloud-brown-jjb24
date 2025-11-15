@@ -1,21 +1,21 @@
-# Use Google Cloud SDK's container as the base image
-FROM google/cloud-sdk
+# Use an official Python runtime as a parent image
+FROM python:3.11-slim
 
-# Specify your e-mail address as the maintainer of the container image
-LABEL maintainer="yourname@pdx.edu"
-
-# Copy the contents of the current directory into the container directory /app
-COPY . /app
-
-# Set the working directory of the container to /app
+# Set the working directory in the container
 WORKDIR /app
 
-# Install necessary packages
-RUN apt-get update -y && apt-get install -y python3-pip python3-venv \
-    && python3 -m venv /env && /env/bin/pip install --no-cache-dir -r requirements.txt
+# Copy the requirements file into the container at /app
+COPY requirements.txt .
 
-# Set the PATH to use the virtual environment's Python and pip
-ENV PATH="/env/bin:$PATH"
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Set the parameters to the program
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 app:app
+# Copy the rest of the application code into the container at /app
+COPY . .
+
+# Set the PORT environment variable that Cloud Run will use
+ENV PORT 8080
+
+# Define the command to run your app using gunicorn
+# This is the same command from your app.yaml's entrypoint
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 app:app
