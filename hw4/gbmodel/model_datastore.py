@@ -1,56 +1,61 @@
-# Copyright 2016 Google Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# File: gbmodel/model_datastore.py
 
 from .Model import Model
 from datetime import datetime
 from google.cloud import datastore
 
 def from_datastore(entity):
-    """Translates Datastore results into the format expected by the
-    application.
-
-    Datastore typically returns:
-        [Entity{key: (kind, id), prop: val, ...}]
-
-    This returns:
-        [ name, email, date, message ]
-    where name, email, and message are Python strings
-    and where date is a Python datetime
-    """
+    """Translates Datastore results into the format expected by the application."""
     if not entity:
         return None
     if isinstance(entity, list):
         entity = entity.pop()
-    return [entity['name'],entity['email'],entity['date'],entity['message']]
+    
+    # The order of fields returned here must match the order in index.py
+    return [
+        entity.get('title'),
+        entity.get('genre'),
+        entity.get('artist'),
+        entity.get('writer'),
+        entity.get('release_year'),
+        entity.get('release_month'),
+        entity.get('lyrics'),
+        entity.get('rating'),
+        entity.get('url')
+    ]
 
 class model(Model):
     def __init__(self):
+        # Initialize the Datastore client. It will automatically use the
+        # project ID from the environment when running on Google Cloud.
         self.client = datastore.Client()
 
     def select(self):
-        query = self.client.query(kind = 'Homework4')
-        entities = list(map(from_datastore,query.fetch()))
+        # Query the Datastore for all entities of the Kind 'SongsHW4'.
+        # Using 'SongsHW4' ensures data doesn't conflict with other labs.
+        query = self.client.query(kind='SongsHW4')
+        entities = list(map(from_datastore, query.fetch()))
         return entities
 
-    def insert(self,name,email,message):
-        key = self.client.key('Homework4')
-        rev = datastore.Entity(key)
-        rev.update( {
-            'name': name,
-            'email' : email,
-            'date' : datetime.today(),
-            'message' : message
-            })
-        self.client.put(rev)
+    def insert(self, title, genre, artist, writer, release_year, release_month, lyrics, rating, url):
+        # Create a new key for the 'SongsHW4' Kind.
+        key = self.client.key('SongsHW4')
+        song_entity = datastore.Entity(key)
+
+        # Update the entity with all the song data.
+        song_entity.update({
+            'title': title,
+            'genre': genre,
+            'artist': artist,
+            'writer': writer,
+            'release_year': int(release_year),
+            'release_month': int(release_month),
+            'lyrics': lyrics,
+            'rating': int(rating),
+            'url': url,
+            'created': datetime.today()
+        })
+
+        # Save the entity to Datastore.
+        self.client.put(song_entity)
         return True

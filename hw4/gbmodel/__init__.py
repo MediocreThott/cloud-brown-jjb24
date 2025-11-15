@@ -1,18 +1,15 @@
-#model_backend = 'pylist'
-#model_backend = 'sqlite3'
-model_backend = 'datastore'
-#model_backend = 'firestore'
+# File: gbmodel/__init__.py
 
-if model_backend == 'sqlite3':
-    from .model_sqlite3 import model
-elif model_backend == 'pylist':
-    from .model_pylist import model
-elif model_backend == 'datastore':
+# Set the model_backend to 'datastore' to use our modified file.
+model_backend = 'datastore'
+
+if model_backend == 'datastore':
     from .model_datastore import model
-elif model_backend == 'firestore':
-    from .model_firestore import model
+elif model_backend == 'sqlite3':
+    # This is kept for local testing if you ever need it.
+    from .model_sqlite3 import model
 else:
-    raise ValueError("No appropriate databackend configured. ")
+    raise ValueError("No appropriate databackend configured.")
 
 appmodel = model()
 
