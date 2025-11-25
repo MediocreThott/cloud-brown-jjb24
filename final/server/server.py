@@ -1,12 +1,10 @@
 import os
 import json
 from flask import Flask, request, redirect, session, url_for, jsonify
-from dotenv import load_dotenv
 from yahoo_oauth import OAuth2
 from yahoo_fantasy_api import Game, League
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-load_dotenv()
 
 # --- Configuration ---
 CLIENT_ID = os.getenv('YAHOO_CLIENT_ID')
