@@ -1,0 +1,4 @@
+Flask==2.3.2
+pyOpenSSL==23.2.0
+yahoo_fantasy_api==2.2.0
+python-dotenv==1.0.0
