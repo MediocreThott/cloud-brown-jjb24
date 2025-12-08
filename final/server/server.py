@@ -1,106 +1,98 @@
 import os
-import json
 from flask import Flask, request, redirect, session, url_for, jsonify
-from dotenv import load_dotenv
-from yahoo_oauth import OAuth2
-from yahoo_fantasy_api import Game, League
+from requests_oauthlib import OAuth2Session
 from werkzeug.middleware.proxy_fix import ProxyFix
-from datetime import date
-
-# We keep load_dotenv for local development convenience
-load_dotenv()
 
 # --- Configuration ---
 CLIENT_ID = os.getenv('YAHOO_CLIENT_ID')
 CLIENT_SECRET = os.getenv('YAHOO_CLIENT_SECRET')
 
-# --- CRITICAL FIX for Cloud Run Deployment ---
-# This BASE_URL will be set in the Cloud Run environment variables.
-BASE_URL = os.getenv('BASE_URL')
-# The full callback URL is constructed from the base.
-CALLBACK_URL = f"{BASE_URL}/callback" if BASE_URL else None
+# Yahoo's OAuth2 & API URLs
+AUTHORIZATION_URL = 'https://api.login.yahoo.com/oauth2/request_auth'
+TOKEN_URL = 'https://api.login.yahoo.com/oauth2/get_token'
+BASE_API_URL = 'https://fantasysports.yahooapis.com/fantasy/v2'
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 app.secret_key = os.urandom(24) 
 
-# We initialize OAuth2 with the redirect_uri to prevent command-line mode.
-oauth = OAuth2(CLIENT_ID, CLIENT_SECRET, store_token='session', redirect_uri=CALLBACK_URL)
+# --- Authentication Routes ---
+@app.route("/")
+def index():
+    if 'oauth_token' in session:
+        return "<h1>SUCCESS! Your full MCP Server is live and authenticated.</h1>"
+    return '<h1>Welcome</h1><p>Please <a href="/login">login with Yahoo</a>.</p>'
 
-# --- Helper Function ---
+@app.route("/login")
+def login():
+    redirect_uri = url_for('callback', _external=True, _scheme='https')
+    oauth = OAuth2Session(CLIENT_ID, redirect_uri=redirect_uri, scope=["fspt-r"])
+    authorization_url, state = oauth.authorization_url(AUTHORIZATION_URL)
+    session['oauth_state'] = state
+    return redirect(authorization_url)
+
+@app.route("/callback")
+def callback():
+    redirect_uri = url_for('callback', _external=True, _scheme='https')
+    oauth = OAuth2Session(CLIENT_ID, state=session['oauth_state'], redirect_uri=redirect_uri)
+    token = oauth.fetch_token(TOKEN_URL, client_secret=CLIENT_SECRET,
+                              authorization_response=request.url)
+    session['oauth_token'] = token
+    return redirect(url_for('index'))
+
+# --- Helper Function for making authenticated API calls ---
+def make_api_request(url_path):
+    if 'oauth_token' not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    try:
+        oauth = OAuth2Session(CLIENT_ID, token=session['oauth_token'])
+        full_url = f"{BASE_API_URL}/{url_path}?format=json"
+        response = oauth.get(full_url)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# --- Helper Function to clean Yahoo's messy player data format ---
 def clean_player_data(player_list):
     player_dict = {}
     for item in player_list:
         if isinstance(item, dict):
-            player_dict.update(item)
+            for key, value in item.items():
+                if key == 'name':
+                    player_dict.update(value)
+                else:
+                    player_dict[key] = value
     return player_dict
 
-# --- Authentication Routes ---
-@app.route("/")
-def index():
-    if oauth.token_is_valid():
-        return "<h1>Success! Your MCP Server is live and authenticated.</h1>"
-    else:
-        # For a deployed service, we go straight to login.
-        return redirect(url_for('login'))
-
-@app.route("/login")
-def login():
-    # The redirect_uri is now handled by the oauth object itself.
-    return redirect(oauth.get_login_url())
-
-@app.route("/callback")
-def callback():
-    # The redirect_uri is also handled automatically here.
-    oauth.handle_redirect(request.url)
-    return redirect(url_for('index'))
-
-# --- API Tool Endpoints ---
+# --- ALL OF YOUR API TOOLS, REBUILT WITH THE NEW METHOD ---
 
 @app.route("/leagues")
 def get_leagues():
-    if not oauth.token_is_valid(): return redirect(url_for('login'))
-    try:
-        game = Game(oauth, 'nba')
-        return jsonify({ "game": "nba", "leagues": game.league_ids() })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return make_api_request("users;use_login=1/games;game_keys=nba/leagues")
 
 @app.route("/league/<league_id>/standings")
 def get_league_standings(league_id):
-    if not oauth.token_is_valid(): return redirect(url_for('login'))
-    try:
-        lg = League(oauth, league_id)
-        return jsonify(lg.standings())
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return make_api_request(f"league/{league_id}/standings")
         
 @app.route("/league/<league_id>/teams")
 def get_league_teams(league_id):
-    if not oauth.token_is_valid(): return redirect(url_for('login'))
-    try:
-        lg = League(oauth, league_id)
-        return jsonify(lg.teams())
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return make_api_request(f"league/{league_id}/teams")
 
 @app.route("/league/<league_id>/matchups")
 def get_league_matchups(league_id):
-    if not oauth.token_is_valid(): return redirect(url_for('login'))
-    try:
-        lg = League(oauth, league_id)
-        return jsonify(lg.matchups())
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return make_api_request(f"league/{league_id}/scoreboard")
 
 @app.route("/team/<team_key>/roster")
 def get_team_roster(team_key):
-    if not oauth.token_is_valid(): return redirect(url_for('login'))
+    if 'oauth_token' not in session: return redirect(url_for('login'))
     try:
-        base_url = f"https://fantasysports.yahooapis.com/fantasy/v2/team/{team_key}/roster"
-        response = oauth.session.get(f"{base_url}?format=json")
+        oauth = OAuth2Session(CLIENT_ID, token=session['oauth_token'])
+        url = f"{BASE_API_URL}/team/{team_key}/roster?format=json"
+        response = oauth.get(url)
         response.raise_for_status()
         raw_data = response.json()
+        
         players_dict = raw_data['fantasy_content']['team'][1]['roster']['0']['players']
         cleaned_roster = []
         for i in range(players_dict['count']):
@@ -111,7 +103,7 @@ def get_team_roster(team_key):
             if len(selected_pos_info) > 1 and 'position' in selected_pos_info[1]:
                 roster_position = selected_pos_info[1]['position']
             cleaned_roster.append({
-                'name': player_details.get('name', {}).get('full', 'N/A'),
+                'name': player_details.get('full', 'N/A'),
                 'player_id': player_details.get('player_id', 'N/A'),
                 'player_key': player_details.get('player_key', 'N/A'),
                 'editorial_team_abbr': player_details.get('editorial_team_abbr', 'N/A'),
@@ -123,81 +115,24 @@ def get_team_roster(team_key):
     except Exception as e:
         return jsonify({"error": str(e), "message": "Failed to fetch or parse roster data."}), 500
 
-@app.route("/league/<league_id>/free_agents")
-def get_free_agents(league_id):
-    if not oauth.token_is_valid(): return redirect(url_for('login'))
-    try:
-        lg = League(oauth, league_id)
-        position = request.args.get('position')
-        if position:
-            free_agents = lg.free_agents(position)
-        else:
-            free_agents = lg.free_agents('P,G,F,C')
-        return jsonify(free_agents)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/league/<league_id>/waivers")
-def get_waivers(league_id):
-    if not oauth.token_is_valid(): return redirect(url_for('login'))
-    try:
-        lg = League(oauth, league_id)
-        raw_waivers = lg.waivers()
-        cleaned__waivers = []
-        for player in raw_waivers:
-            cleaned_waivers.append({
-                "name": player.get("name"),
-                "player_id": player.get("player_id"),
-                "player_key": player.get("player_key"),
-                "waiver_end_date": player.get("waiver_end_date"),
-                "percent_owned": player.get("percent_owned")
-            })
-        return jsonify(cleaned_waivers)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+@app.route("/league/<league_id>/players")
+def get_players(league_id):
+    # This can handle free agents, waivers, and filtered positions
+    player_status = request.args.get('status', 'FA') # Default to Free Agents
+    position = request.args.get('position')
+    
+    path = f"league/{league_id}/players;status={player_status}"
+    if position:
+        path += f";position={position}"
+        
+    return make_api_request(path)
 
 @app.route("/league/<league_id>/player_stats")
 def get_player_stats(league_id):
-    if not oauth.token_is_valid(): return redirect(url_for('login'))
-    try:
-        lg = League(oauth, league_id)
-        player_ids = request.args.get('player_ids')
-        if not player_ids:
-            return jsonify({"error": "player_ids parameter is required"}), 400
-        ids_list = player_ids.split(',')
-        player_stats = lg.player_stats(ids_list, "season")
-        return jsonify(player_stats)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/league/<league_id>/player_stats_last_week")
-def get_player_stats_last_week(league_id):
-    if not oauth.token_is_valid(): return redirect(url_for('login'))
-    try:
-        lg = League(oauth, league_id)
-        player_ids = request.args.get('player_ids')
-        if not player_ids:
-            return jsonify({"error": "player_ids parameter is required"}), 400
-        ids_list = player_ids.split(',')
-        player_stats = lg.player_stats(ids_list, "lastweek")
-        return jsonify(player_stats)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-        
-@app.route("/league/<league_id>/player_stats_last_month")
-def get_player_stats_last_month(league_id):
-    if not oauth.token_is_valid(): return redirect(url_for('login'))
-    try:
-        lg = League(oauth, league_id)
-        player_ids = request.args.get('player_ids')
-        if not player_ids:
-            return jsonify({"error": "player_ids parameter is required"}), 400
-        ids_list = player_ids.split(',')
-        player_stats = lg.player_stats(ids_list, "lastmonth")
-        return jsonify(player_stats)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# This part is only for running locally with 'python server.py'
-if __name__ == "__main__":
-    app.run(ssl_context='adhoc', host='localhost', port=8080, debug=True)
+    player_keys = request.args.get('player_keys')
+    stat_type = request.args.get('type', 'season') # 'season', 'lastweek', 'lastmonth'
+    
+    if not player_keys:
+        return jsonify({"error": "player_keys parameter is required"}), 400
+    
+    return make_api_request(f"league/{league_id}/players;player_keys={player_keys}/stats;type={stat_type}")
