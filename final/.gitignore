@@ -4,3 +4,4 @@ __pycache__/
 
 # Ignore environment files with secrets
 .env
+env.yaml
