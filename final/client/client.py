@@ -4,11 +4,6 @@ import json
 import google.generativeai as genai
 
 # --- CONFIGURATION ---
-GOOGLE_API_KEY = ***REMOVED***
-SERVER_BASE_URL = 'https://fantasy-server-780966768163.us-central1.run.app'
-FANTASY_API_KEY = 'super-secret-key-12345'
-HEADERS = {'X-API-Key': FANTASY_API_KEY}
-
 # --- TOOL DEFINITIONS ---
 def get_leagues():
     """Returns a list of all fantasy basketball league IDs for the user."""
